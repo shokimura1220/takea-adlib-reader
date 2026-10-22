@@ -6,7 +6,7 @@ on:
       id: { description: 'request id (opaque)', required: true }
       job: { description: 'encrypted request', required: true }
 concurrency:
-  group: read
+  group: read-${{ inputs.id }}
   cancel-in-progress: false
 permissions:
   contents: read
