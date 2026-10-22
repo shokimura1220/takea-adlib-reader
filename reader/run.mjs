@@ -9,7 +9,7 @@ if (key.length !== 32) { console.error('鍵が無い'); process.exit(2); }
 const open = b64 => { const b = Buffer.from(b64, 'base64'); const d = crypto.createDecipheriv('aes-256-gcm', key, b.subarray(0, 12)); d.setAuthTag(b.subarray(12, 28)); return Buffer.concat([d.update(b.subarray(28)), d.final()]); };
 const seal = buf => { const iv = crypto.randomBytes(12); const c = crypto.createCipheriv('aes-256-gcm', key, iv); const e = Buffer.concat([c.update(buf), c.final()]); return Buffer.concat([iv, c.getAuthTag(), e]); };
 const job = JSON.parse(open(fs.readFileSync(process.argv[2], 'utf8').trim()).toString('utf8'));
-if (!/^adlib_(census|capture)\.js$/.test(job.script)) { console.error('script が違う'); process.exit(2); }
+if (!/^(adlib_(census|capture)|discover_kw)\.js$/.test(job.script)) { console.error('script が違う'); process.exit(2); }
 const OUT = '/tmp/out'; fs.mkdirSync(`${OUT}/data`, { recursive: true }); fs.mkdirSync(`${OUT}/images`, { recursive: true });
 job.config.outDir = OUT; fs.writeFileSync(`${OUT}/config.json`, JSON.stringify(job.config));
 const here = path.dirname(new URL(import.meta.url).pathname);
