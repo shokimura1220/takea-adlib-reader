@@ -1,0 +1,50 @@
+name: read
+run-name: read ${{ inputs.id }}
+on:
+  workflow_dispatch:
+    inputs:
+      id: { description: 'request id (opaque)', required: true }
+      job: { description: 'encrypted request', required: true }
+concurrency:
+  group: read
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.fonts
+            /tmp/pp/node_modules
+            ~/.cache/puppeteer
+          key: fonts-pp-23.11.1-v1
+      - name: fonts
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
+          mkdir -p ~/.fonts && cp /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc ~/.fonts/
+      - name: puppeteer
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: mkdir -p /tmp/pp && cd /tmp/pp && npm init -y >/dev/null && npm i -s puppeteer@23.11.1 >/dev/null
+      - run: fc-cache -f ~/.fonts >/dev/null
+      - name: read
+        env:
+          JOB: ${{ inputs.job }}
+          ADLIB_KEY: ${{ secrets.ADLIB_KEY }}
+          PUPPETEER_PATH: /tmp/pp/node_modules/puppeteer
+          CLOUD_ADLIB: '1'
+        run: |
+          printf '%s' "$JOB" > /tmp/job.txt
+          node reader/run.mjs /tmp/job.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: result, path: /tmp/result.bin, retention-days: 1 }
+      - run: sleep 30
