@@ -43,7 +43,8 @@ const url = q => `https://www.facebook.com/ads/library/?active_status=active&ad_
       rec = { status: 'ok', total: r.total, cards: r.cards };
     } catch (e) { rec = { status: '取得できず', reason: String(e.message || e).slice(0, 200), cards: [] }; }
     await p.close();
-    if (!rec.cards.length) { zero++; if (zero >= 3) break; } else { zero = 0; runs[j.key] = rec; } // 0件は記録しない・3語続いたら止める
+    // 0件の語は記録しない（読めなかったのか本当に0件か分からない）。10語は全部試す（3語続けて0件で止めると、残りの語が一度も引かれなかった）
+    if (rec.cards.length) runs[j.key] = rec; else { zero++; runs[j.key + '#zero'] = { status: 'zero', at: new Date().toISOString() }; }
     await sleep(4000);
   }
   await b.close();
